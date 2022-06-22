@@ -34,18 +34,27 @@ func ConnectAws() *session.Session {
 }
 
 func upload(w http.ResponseWriter, req *http.Request) {
-	uploader := s3manager.NewUploader(Sess)
-	bucket := os.Getenv("BUCKET_NAME")
-	file, err := os.Open("testfile")
+
+	fmt.Fprintf(w, "upload \n")
+	err := req.ParseMultipartForm(32 << 20) // maxMemory 32MB
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Printf("parser %v", err)
+		return
+	}
+	file, handler, err := req.FormFile("myfile")
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 	defer file.Close()
+	fmt.Fprintf(w, "Handler %v", handler.Header)
+	uploader := s3manager.NewUploader(Sess)
+	bucket := os.Getenv("BUCKET_NAME")
 	//upload to the s3 bucket
 	up, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		ACL:    aws.String("public-read"),
-		Key:    aws.String("testfile"),
+		Key:    aws.String(handler.Filename),
 		Body:   file,
 	})
 	if err != nil {
@@ -60,6 +69,7 @@ func actions(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	http.Handle("/", http.FileServer(http.Dir("../")))
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/actions", actions)
 
