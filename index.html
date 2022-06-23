@@ -3,12 +3,56 @@
     <head>
         <meta charset="UTF-8" />
         <title>Test Input </title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="./style.css">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     </head>
     <body>
-        <form enctype="multipart/form-data" action="http://localhost:8090/upload" method="post">
-            <input type="file" id="myfile" name="myfile">
-            <input type="hidden" name="token" value="{{.}}" />
-            <input type="submit" value="Upload">
-        </form>
+        <div class="main-div d-flex flex-column align-items-center">
+            <div class="hero-div p-2 center-block">
+            <h1 class="display-3"> Action Recognition using FaaS</h1>
+            </div>
+            <div class="content-div p-2 center-block">
+                <h2 >Upload a file in order to be processed: </h2>
+                <br>
+                <form enctype="multipart/form-data" action="#" onsubmit="uploadVideo(this.form)">
+                    <div class="d-flex align-items-center">
+<!--                        <div class="custom-file">-->
+<!--                            <input class="custom-file-input" type="file" id="myfile" name="myfile">-->
+<!--                        </div>-->
+                        <input class="form-control form-control-lg" id="myfile" type="file">
+                        <input class="btn btn-primary btn-lg" type="submit" value="Upload" id="submit">
+                    </div>
+                </form>
+            </div>
+            <div class="content-div p-2 center-block">
+                <video width="640" height="360" controls>
+                    <source src="http://hackathon.s3-eu-central-1.ionoscloud.com/test.mov" type="video/mov">
+                </video>
+                <br>
+                <h1><span class="badge badge-secondary" id="videoData">Data of video</span></h1>
+            </div>
+        </div>
     </body>
+    <script>
+        document.getElementById("myfile")
+            .onchange = function(event) {
+            let file = event.target.files[0];
+            let blobURL = URL.createObjectURL(file);
+            document.querySelector("video").src = blobURL;
+        }
+        async function uploadVideo(data) {
+            const formData = new FormData(data)
+            const XHR = new XMLHttpRequest();
+            XHR.open("POST", "http://localhost:8090/upload");
+            XHR.send(formData)
+            await new Promise(r => setTimeout(r, 2000));
+            XHR.open('GET', 'http://localhost:8090/actions', /* async = */ false);
+            XHR.send();
+            console.log('response head: ' + XHR.responseText.substring(0, 15) + '...');
+            data = JSON.parse(XHR.responseText)
+            document.getElementById("videoData").innerHTML = data["name"];
+
+        }
+    </script>
 </html>

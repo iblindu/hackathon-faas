@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"net/http"
@@ -64,7 +65,14 @@ func upload(w http.ResponseWriter, req *http.Request) {
 }
 func actions(w http.ResponseWriter, req *http.Request) {
 
-	fmt.Fprintf(w, "actions\n")
+	videos := make(map[string]string)
+	videos["name"] = "action"
+	jData, err := json.Marshal(videos)
+	if err != nil {
+		// handle error
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jData)
 
 }
 
