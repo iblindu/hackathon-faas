@@ -1,7 +1,7 @@
 package helpers
 
-type Video struct {
-	Id     uint   `json:"ID"`
-	Name   string `json:"Name"`
-	Action string `json:"Action"`
+type Videos struct {
+	Id     uint   `json:"id"`
+	Name   string `json:"name"`
+	Action string `json:"action"`
 }

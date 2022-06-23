@@ -42,12 +42,12 @@
             const XHR = new XMLHttpRequest();
             XHR.open("POST", "http://localhost:8090/upload");
             XHR.send(formData)
-            // await new Promise(r => setTimeout(r, 2000));
-            // XHR.open('POST', 'http://localhost:8090/actions);
-            // XHR.send(document.getElementById('myfile').value);
-            // console.log('response head: ' + XHR.responseText.substring(0, 15) + '...');
-            // data = JSON.parse(XHR.responseText)
-            // document.getElementById("videoData").innerHTML = data["name"];
+            await new Promise(r => setTimeout(r, 5000));
+            const toSend = XHR.response
+            XHR.open("POST", "http://localhost:8090/actions");
+            XHR.send(toSend);
+            await new Promise(r => setTimeout(r, 2000));
+            document.getElementById("videoData").innerHTML = XHR.response;
 
         }
     </script>

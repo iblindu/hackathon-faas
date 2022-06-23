@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"hackathon/helpers"
-	"log"
-	"net/http"
-	"os"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"hackathon/helpers"
+	"log"
+	"net/http"
+	"os"
 )
 
 var Sess = ConnectAws()
@@ -49,7 +48,6 @@ func upload(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer file.Close()
-	fmt.Fprintf(w, "Handler %v", handler.Header)
 	uploader := s3manager.NewUploader(Sess)
 	bucket := os.Getenv("BUCKET_NAME")
 	//upload to the s3 bucket
@@ -87,21 +85,26 @@ func upload(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(up.Location))
+	jData, err := json.Marshal(up.Location)
+	if err != nil {
+		// handle error
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jData)
 }
 func actions(w http.ResponseWriter, req *http.Request) {
-	var video helpers.Video
-	err := json.NewDecoder(req.Body).Decode(&video)
+
+	var video helpers.Videos
+	var url string
+	json.NewDecoder(req.Body).Decode(&url)
+	fmt.Print(req.Body)
+	helpers.DB.Where("name = ?", &url).First(&video)
+	jData, err := json.Marshal(video.Action)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		// handle error
 	}
-
-	helpers.DB.Where("name = ?", video.Name).First(&video)
-
-	w.Write([]byte(video.Action))
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jData)
 }
 
 func main() {

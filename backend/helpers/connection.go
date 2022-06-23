@@ -1,8 +1,6 @@
 package helpers
 
 import (
-	"log"
-
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -17,7 +15,4 @@ func SetupConnection(dbDns string) {
 
 	DB = connection
 
-	if err = connection.AutoMigrate(&Video{}); err != nil {
-		log.Fatal(1)
-	}
 }
