@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hackathon/helpers"
 	"log"
 	"net/http"
 	"os"
@@ -88,16 +89,17 @@ func upload(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(up.Location))
 }
 func actions(w http.ResponseWriter, req *http.Request) {
-	var video Video
+	var video helpers.Video
 	err := json.NewDecoder(req.Body).Decode(&video)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	DB.Where("name = ?", video.Name).First(&video)
+	helpers.DB.Where("name = ?", video.Name).First(&video)
 
 	w.Write([]byte(video.Action))
 }
@@ -107,7 +109,7 @@ func main() {
 	if dbDns == "" {
 		log.Fatal(1)
 	}
-	SetupConnection(dbDns)
+	helpers.SetupConnection(dbDns)
 
 	http.Handle("/", http.FileServer(http.Dir("../")))
 	http.HandleFunc("/upload", upload)
