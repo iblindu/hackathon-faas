@@ -1,15 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var Sess = ConnectAws()
@@ -35,8 +37,6 @@ func ConnectAws() *session.Session {
 }
 
 func upload(w http.ResponseWriter, req *http.Request) {
-
-	fmt.Fprintf(w, "upload \n")
 	err := req.ParseMultipartForm(32 << 20) // maxMemory 32MB
 	if err != nil {
 		fmt.Printf("parser %v", err)
@@ -61,22 +61,54 @@ func upload(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	w.Write([]byte(up.Location))
+
+	jsonValue, err := json.Marshal(map[string]string{"url": up.Location})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	faasUrl := os.Getenv("URL")
+	faasApiKey := os.Getenv("API_KEY")
+	faasReq, err := http.NewRequest("POST", faasUrl, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	faasReq.Header.Set("Content-Type", "application/json")
+	faasReq.Header.Set("api-key", faasApiKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(faasReq)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 func actions(w http.ResponseWriter, req *http.Request) {
-
-	videos := make(map[string]string)
-	videos["name"] = "action"
-	jData, err := json.Marshal(videos)
+	var video Video
+	err := json.NewDecoder(req.Body).Decode(&video)
 	if err != nil {
-		// handle error
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jData)
 
+	DB.Where("name = ?", video.Name).First(&video)
+
+	w.Write([]byte(video.Action))
 }
 
 func main() {
+	dbDns := os.Getenv("DB_DNS")
+	if dbDns == "" {
+		log.Fatal(1)
+	}
+	SetupConnection(dbDns)
+
 	http.Handle("/", http.FileServer(http.Dir("../")))
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/actions", actions)
